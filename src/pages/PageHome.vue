@@ -1,6 +1,6 @@
 <template>
   <q-page class="relative-position">
-    <q-scroll-area class="absolute fullscreen">
+    <q-scroll-area class="absolute full-width full-height">
       <div class="q-py-lg q-px-md row q-col-gutter-md items-end">
         <div class="col">
           <q-input class="new-qweet" bottom-slots v-model="newQweetContent" autogrow placeholder="What's happening?"
@@ -53,6 +53,7 @@
                   <q-btn flat round size="sm"
                          :color="qweet.liked? 'red' : 'grey'"
                          :icon="qweet.liked ? 'fas fa-heart' : 'far fa-heart'"
+                         @click="toggleLiked(qweet)"
                   ></q-btn>
                   <q-btn @click="deleteQweet(qweet)" flat round color="grey" size="sm" icon="fas fa-trash-alt"></q-btn>
                 </div>
@@ -76,16 +77,16 @@ export default defineComponent({
     return {
       newQweetContent: '',
       qweets: [
-        {
-          content: 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Accusamus molestiae, pariatur. Architecto facilis nisi officia quas voluptatem. Culpa, debitis doloremque eaque eos exercitationem iste natus officiis omnis praesentium quas tempora.',
-          date: '1624681611987',
-          liked: false,
-        },
-        {
-          content: 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Accusamus molestiae, pariatur. Architecto facilis nisi officia quas voluptatem. Culpa Lorem ipsum dolor sit amet, consectetur adipisicing elit. Accusamus molestiae, pariatur. Architecto facilis nisi officia quas voluptatem. Culpa, debitis doloremque eaque eos exercitationem iste natus officiis omnis praesentium quas tempora.',
-          date: '1624681666162',
-          liked: true,
-        }
+        // {
+        //   content: 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Accusamus molestiae, pariatur. Architecto facilis nisi officia quas voluptatem. Culpa, debitis doloremque eaque eos exercitationem iste natus officiis omnis praesentium quas tempora.',
+        //   date: '1624681611987',
+        //   liked: false,
+        // },
+        // {
+        //   content: 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Accusamus molestiae, pariatur. Architecto facilis nisi officia quas voluptatem. Culpa Lorem ipsum dolor sit amet, consectetur adipisicing elit. Accusamus molestiae, pariatur. Architecto facilis nisi officia quas voluptatem. Culpa, debitis doloremque eaque eos exercitationem iste natus officiis omnis praesentium quas tempora.',
+        //   date: '1624681666162',
+        //   liked: true,
+        // }
       ],
     }
   },
@@ -94,7 +95,8 @@ export default defineComponent({
     addNewQweet() {
       let newQweet = {
         content: this.newQweetContent,
-        date: Date.now()
+        date: Date.now(),
+        liked: false
       }
       db.collection('qweets').add(newQweet).then((docRef) => {
         console.log('Document written with ID: ', docRef.id);
@@ -110,6 +112,15 @@ export default defineComponent({
         console.error('Error removing document: ', error);
       })
     },
+    toggleLiked(qweet) {
+     db.collection('qweets').doc(qweet.id).update({
+        liked: !qweet.liked
+      }).then(() => {
+        console.log('Document successfully updated!');
+      }).catch((error) => {
+        console.error('Error updating document: ', error);
+      });
+    }
   },
 
   mounted() {
@@ -118,15 +129,16 @@ export default defineComponent({
         snapshot.docChanges().forEach((change) => {
           let qweetChange = change.doc.data()
           qweetChange.id = change.doc.id
+
           if (change.type === 'added') {
-            console.log('new: ', qweetChange)
             this.qweets.unshift(qweetChange)
           }
           if (change.type === 'modified') {
             console.log('Modified Qweet: ', qweetChange)
+            let index = this.qweets.findIndex(qweet => qweet.id === qweetChange.id)
+            Object.assign(this.qweets[index], qweetChange)
           }
           if (change.type === 'removed') {
-            console.log('Removed Qweet: ', qweetChange)
             let index = this.qweets.findIndex(qweet => qweet.id === qweetChange.id)
             this.qweets.splice(index, 1)
           }
